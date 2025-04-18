@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        
+        <title>config</title>
+
+        <link rel="icon" href="book-icon.png" type="image/png">
+        
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="lib/bootstrap.min.css">
+        <link rel="stylesheet" href="lib/toggle-bootstrap.min.css" />
+        <link rel="stylesheet" href="lib/toggle-bootstrap-dark.min.css" />
+        <link rel="stylesheet" href="lib/toggle-bootstrap-print.min.css" />
+
+        <style>
+            .col_green{
+                background-color: green;
+            }
+        </style>
+    </head>
+    <body class="bootstrap-dark">
+        <main class="container mt-4 mb-5 pb-5 text-center" 
+            style="max-width: 500px">
+            <div><h2>Select your task</h2></div>
+
+            <table id="units" class="table text-center"></table>
+ 
+            <div id="state" class="text-center mb-3">
+                <h3>Finding state</h3>
+            </div>
+
+            <div class="text-center mt-2">
+                <a class="btn btn-lg btn-warning" href="index.html">home</a>
+                
+                <button id="must"
+                    class="btn btn-lg btn-danger">remove uncorrects</button>
+                <button id="dark"
+                    class="btn btn-lg btn-dark border-light">light</button>
+            </div>
+        </main>
+
+        <!-- jquery -->
+        <script src="lib/jquery-3.3.1.slim.min.js"></script>
+        <script src="lib/popper.min.js"></script>
+        <script src="lib/bootstrap.min.js"></script>
+        
+        <script src="database.js"></script>
+        <script>
+            const qsa = e => document.querySelectorAll(e)
+            const qs = e => document.querySelector(e)
+            const ce = e => document.createElement(e)
+            
+            const class_name="col_green"
+
+            // ========== books ==========
+            const books = [...new Set(lst.map(x=>x.book))]
+
+            // view books
+            $('table').append(
+                $('<tr></tr>').append(
+                    ...books.map(val => `
+                        <th id="${val.replaceAll(" ","_")}">${val}</th>
+                    `)
+                )
+            )
+
+            // book click
+            $('th').click(function(){
+                $(this).toggleClass(class_name)
+
+                for(const val of qsa("#"+$(this).attr("id")))
+                    if($(this).hasClass(class_name)) 
+                        $(val).addClass(class_name)
+                    else                             
+                        $(val).removeClass(class_name)
+
+                save()
+            })
+            
+            // ========== units ==========
+            // view units
+            for(const unit of [...new Set(lst.map(x=>x.unit))]){
+                const tr=$('<tr></tr>')
+
+                for(const book of books){
+                    const unt = [...new Set(
+                            lst.filter(x=>x.unit==unit&&x.book==book
+                        ).map(
+                            x=>[x.book,x.unit]
+                        )
+                    )]
+                    
+                    tr.append(unt[0]
+                        ?`
+                        <td align=right 
+                            id="${unt[0][0].replaceAll(" ","_")}"
+                            name="${unt[0][1]}">
+                            ${unt[0][1]}
+                        </td>
+                        `:`<td></td>`
+                    )
+                }
+
+                $('table').append(tr)
+            }
+
+            // unit click
+            $('td').click(function(){
+                $(this).toggleClass(class_name)
+
+                save()
+            })
+
+            // ========== clear ==========
+            $("#must").click(function(){
+                localStorage.removeItem("uncorrect")
+                alert("uncorrect list cleared")
+            })
+
+            // ========== save ==========
+            function save(){
+                const trs = qsa("tr")
+                const col = trs[0].children
+
+                localStorage.setItem("units", JSON.stringify(
+                    [...qsa(`td.${class_name}`)].map(x=>[
+                        x.getAttribute("id").replaceAll("_"," "),
+                        x.getAttribute("name")
+                    ])
+                ))    
+            }
+
+            // ========== state ==========
+            // state view
+            $("#state").append(
+                ...[["mix"],["eng"],["uzb"]].map(val => `
+                    <div class="form-check">
+                        <input 
+                            id="${val}" 
+                            type="radio" 
+                            class="form-check-input" 
+                            name="state" 
+                            value="${val}"/>
+
+                        <label for="${val}">${val}</label>
+                    </div>
+                `)
+            )
+
+            // state save
+            $("#state > *").click(function(){
+                const state = qs("input[name=state]:checked")
+                localStorage.setItem("state", state ? state.value : "uzb")
+            })
+
+            // state load
+            const state = localStorage.getItem("state")
+            qs(`input[name=state][value=${state || "uzb"}]`).checked=true 
+            
+            // ========== load units ==========
+            const units = localStorage.getItem("units")
+
+            if(units){
+                for(let val of JSON.parse(units))
+                    $(`td#${val[0].replaceAll(" ","_")}[name='${val[1]}']`).addClass(class_name)
+            }
+
+            // ========== theme ==========
+            function get_theme(){
+                if(localStorage.getItem("theme")=="dark"){
+                    $('body').toggleClass("bootstrap-dark")
+
+                    // tugmaning holati
+                    $("#dark").toggleClass("btn-dark")
+                        .toggleClass("border-light")
+                        .toggleClass("border-dark")
+                        .text(
+                            $("#dark").text()==="light"?"dark":"light"
+                        )
+                }
+            }
+
+            get_theme()
+
+            // click theme button
+            $("#dark").click(function(){
+                $('body').toggleClass("bootstrap-dark")
+
+                // tugmaning holati
+                $(this).toggleClass("btn-dark")
+                    .toggleClass("border-light")
+                    .toggleClass("border-dark")
+                    .text(
+                        $(this).text()==="light"
+                            ?"dark":"light"
+                    )
+                
+                localStorage.setItem("theme", $(this).text())
+            })
+        </script>
+    </body>
+</html>

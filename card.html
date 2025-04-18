@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        
+        <title>card</title>
+
+        <link rel="icon" href="book-icon.png" type="image/png">
+        
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="lib/bootstrap.min.css">
+        <link rel="stylesheet" href="lib/toggle-bootstrap.min.css" />
+        <link rel="stylesheet" href="lib/toggle-bootstrap-dark.min.css" />
+        <link rel="stylesheet" href="lib/toggle-bootstrap-print.min.css" />
+
+        <style>
+            body { overscroll-behavior: contain;}
+        </style>
+    </head>
+    <body class="bootstrap-dark mt-3">
+        <main class="container text-center" 
+            style="min-height: 800px;">
+            <div>
+                <h2>card</h2>
+                <p id="state_info"></p>
+            </div>
+
+            <div class="container"
+                style="
+                    height: 10em;
+                    position: relative;
+                    min-height:500px;">
+                <div style="
+                    margin: 0;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    margin-right: -50%;
+                    transform: translate(-50%, -50%) ;">
+                    <div id="mytest"></div>
+                    <div id="disc_view"></div>
+                </div>
+                
+            </div>
+
+            <footer class="fixed-bottom pb-5 mb-3 text-center">
+                <div>
+                    <div id="info"></div>
+
+                    <a class="btn btn-lg btn-warning" href="index.html">home</a>
+    
+                    <button class="btn btn-lg btn-primary" 
+                        id="description">description</button>
+                    <button class="btn btn-lg btn-danger"  
+                        id="uncorrect">uncorrect</button>
+                    <button class="btn btn-lg btn-success" 
+                        id="correct">correct</button>
+                </div>
+            </footer>
+        </main>
+
+        <script src="lib/jquery-3.3.1.slim.min.js"></script>
+        <script src="lib/popper.min.js"></script>
+        <script src="lib/bootstrap.min.js"></script>
+        
+        <script src="database.js"></script>
+        <script>
+            const state = localStorage.getItem("state") || "uzb"
+
+            $("#state_info").text(state)
+            
+            // load
+            function load_unit_list(){
+                const val = localStorage.getItem("units")
+                if(!val){
+                    alert("config bo'limiga o'ting unit belgilang")
+                    return []
+                }
+
+                return [
+                    JSON.parse(val).map(
+                        // filtirlash
+                        y=>lst.filter(
+                            x=>x.book==y[0] && x.unit==y[1]
+                        )
+                    ).reduce(
+                        // massivlarni qo'shib olish
+                        (acc, val)=> acc.concat(val) 
+                    )
+                ][0]
+            }
+            
+            const sub_lst = load_unit_list().sort(
+                (a,b)=>Math.random() - .5
+            )
+
+            // counters
+            let count = 0
+            let solve = 0
+            let wrong = 0
+
+            let isnext = true
+
+            // info
+            function info_view(){
+                $("#info").text(`${count+1}/${
+                    sub_lst.length} | -${wrong}/+${solve}/${
+                    (100-100*wrong/sub_lst.length).toFixed(2)}%`)
+            }
+
+            // view end
+            function view_uncorrects(){
+                // remove
+                $('#mytest').html("")
+                $('#disc_view').html("")
+
+                // uncorrect list
+                $('#mytest').append(`<h3>Uncorrect list:</h3>`)
+
+                for(let key of uncorrect_list){
+                    const val=sub_lst[key]
+                    $('#mytest').append(
+                        `<h3>${val.eng} - ${val.uzb}</h3>`
+                    )
+                }
+            }
+
+            let disc_tog=false // yordamdan foydalandimi
+            let desc_type=false // yordamni turi
+            function view(){    
+                const val = sub_lst[count]
+                if(val){
+                    // remove
+                    $('#mytest').html("")
+                    $('#disc_view').html("")
+
+                    const h3=$("<h1></h1>")
+                    switch(state){
+                        case "mix":
+                            if(Math.random()>.5){
+                                h3.text(val.eng)
+                                desc_type = true
+                            }else{
+                                h3.text(val.uzb)
+                                desc_type = false
+                            }
+                            break
+                        case "eng":
+                            h3.text(val.eng)
+                            desc_type = true
+                            break
+                        case "uzb":
+                            h3.text(val.uzb)
+                            desc_type = false
+                            break
+                        default:
+                            h3.text(val.uzb)
+                            desc_type = false
+                    }
+
+                    $('#mytest').append(h3)
+                }else view_uncorrects()
+
+                disc_tog=false
+
+                info_view()
+            }
+
+            view()
+
+            function disc_view(){
+                if(disc_tog) return;
+                disc_tog=true
+
+                const val = sub_lst[count]
+
+                $('#disc_view').append(
+                    `<h2>${desc_type ? val.uzb : val.eng}</h2>`
+                )
+            }
+
+            $("#description").click(()=>{
+                disc_view()
+            })
+
+            $("#correct").click(() => {
+                if(count==sub_lst.length) return;
+
+                solve++
+                count++
+
+                view()
+            })
+
+            function saveGlobalUncorrect(index){
+                const val = localStorage.getItem("uncorrect")
+                let uncorr = val ? JSON.parse(val) : []
+
+                if(uncorr.includes(index)) return;
+                
+                uncorr.push(index)
+
+                localStorage.setItem(
+                    "uncorrect", 
+                    JSON.stringify(uncorr)
+                )
+            }
+
+            let uncorrect_list = []
+            $("#uncorrect").click(()=>{
+                if(count==sub_lst.length) return;
+
+                saveGlobalUncorrect(sub_lst[count].index)
+
+                uncorrect_list.push(count)
+
+                wrong++
+                count++
+
+                view()
+            })
+        </script>
+
+        <script src="theme.js"></script>
+    </body>
+</html>

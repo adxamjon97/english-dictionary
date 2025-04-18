@@ -1,0 +1,15 @@
+{
+  "background_color": "purple",
+  "description": "test bajarishga",
+  "display": "fullscreen",
+  "icons": [
+    {
+      "src": "book-icon.png",
+      "sizes": "360x360",
+      "type": "image/png"
+    }
+  ],
+  "name": "English dictionary",
+  "short_name": "EngEssen",
+  "start_url": "index.html"
+}

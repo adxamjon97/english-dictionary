@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <title>units</title>
+
+    <link rel="icon" href="book-icon.png" type="image/png" />
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="lib/bootstrap.min.css" />
+    <link rel="stylesheet" href="lib/toggle-bootstrap.min.css" />
+    <link rel="stylesheet" href="lib/toggle-bootstrap-dark.min.css" />
+    <link rel="stylesheet" href="lib/toggle-bootstrap-print.min.css" />
+
+    <style>
+      .hide {
+        display: none;
+      }
+    </style>
+  </head>
+  <body class="bootstrap-dark">
+    <main
+      class="container mt-3 mb-5 pb-3 text-center"
+      style="max-width: 500px;"
+    >
+      <div class="mb-3">
+        <h3>Select your unit:</h3>
+
+        <select id="books"></select>
+        <select id="units"></select>
+      </div>
+
+      <table class="table text-center table-sm mb-3" style="max-width: 500px;">
+        <thead>
+          <tr>
+            <th>num</th>
+            <th
+              onclick="
+                $('#jadval')
+                .children()
+                .each(function(idx, val){
+                    $(val)
+                    .find('#eng')
+                    .children()
+                    .addClass('hide')
+                })"
+            >
+              eng
+            </th>
+            <th
+              onclick="
+                $('#jadval')
+                .children()
+                .each(function(idx, val){
+                    $(val)
+                    .find('#uzb')
+                    .children()
+                    .addClass('hide')
+                })"
+            >
+              uzb
+            </th>
+          </tr>
+        </thead>
+        <tbody id="jadval"></tbody>
+      </table>
+
+      <div id="nav">
+        <a class="btn btn-lg btn-warning" href="index.html">home</a>
+      </div>
+    </main>
+
+    <script src="lib/jquery-3.3.1.slim.min.js"></script>
+    <script src="lib/popper.min.js"></script>
+    <script src="lib/bootstrap.min.js"></script>
+
+    <script src="database.js"></script>
+    <script>
+      let book = "";
+      let unit = "";
+
+      // write book lists
+      for (const val of [...new Set(lst.map((x) => x.book))])
+        $(`#books`).append(`<option>${val}</option>`);
+
+      // load book list selected and view
+      if (localStorage.getItem("book")) {
+        book = localStorage.getItem("book");
+
+        Array.from(document.querySelector("#books").options).find(
+          (item) => item.text === book
+        ).selected = true;
+      }
+
+      // write unit lists
+      function view_units() {
+        book = $(`#books option:selected`).text();
+        localStorage.setItem("book", book);
+
+        // clear html
+        $(`#units`).html("");
+
+        for (const val of [
+          ...new Set(lst.filter((x) => x.book == book).map((x) => x.unit))
+        ])
+          $("#units").append(`<option>${val}</option>`);
+      }
+
+      // select unit
+      function select_unit() {
+        unit = $(`#units option:selected`).text();
+        localStorage.setItem("unit", unit);
+
+        $("#jadval").html(``);
+
+        let dd = 0;
+        for (const val of lst) {
+          if (val.unit != unit || val.book != book) continue;
+
+          $("#jadval").append(
+            `
+            <tr class="text-center">
+                <td>${val.num}</td>
+                <td
+                    id="eng"
+                    onclick="
+                        $(this).children('p').removeClass('hide')
+                    ">
+                    <p style="margin:0;padding:0">${val.eng}</p>
+                </td>
+
+                <td
+                    id="uzb"
+                    onclick="
+                        $(this).children('p').removeClass('hide')
+                    ">
+                    <p style="margin:0;padding:0">${val.uzb}</p>
+                </td>
+            </tr>` +
+              (++dd % 5 < 1
+                ? `
+            <tr>
+              <td colspan="3"
+                style="
+                  background: red;
+                  height: 2px;
+                  margin:0;
+                  padding:0">
+              </td>
+            </tr>`
+                : ``)
+          );
+        }
+      }
+
+      view_units();
+
+      if (localStorage.getItem("unit")) {
+        unit = localStorage.getItem("unit");
+
+        Array.from(document.querySelector("#units").options).find(
+          (item) => item.text === unit
+        ).selected = true;
+      }
+
+      select_unit();
+
+      $(`#books`).change(() => {
+        view_units();
+        select_unit();
+      });
+
+      $(`#units`).change(select_unit);
+    </script>
+
+    <script src="theme.js"></script>
+  </body>
+</html>

@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        
+        <title>test</title>
+
+        <link rel="icon" href="book-icon.png" type="image/png">
+        
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="lib/bootstrap.min.css">
+        <link rel="stylesheet" href="lib/toggle-bootstrap.min.css" />
+        <link rel="stylesheet" href="lib/toggle-bootstrap-dark.min.css" />
+        <link rel="stylesheet" href="lib/toggle-bootstrap-print.min.css" />
+
+        <style>
+            body { overscroll-behavior: contain;}
+        </style>
+    </head>
+    <body class="bootstrap-dark mt-3">
+        <main class="container text-center" 
+            style="min-height: 800px;">
+            <div>
+                <h2>test</h2>
+                <p id="state_info"></p>
+            </div>
+
+            <div class="container"
+                style="
+                    height: 10em;
+                    position: relative;
+                    min-height:500px;">
+                <div style="
+                    margin: 0;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    margin-right: -50%;
+                    transform: translate(-50%, -50%) ;
+                    min-width: 400px;">
+                    <h4 id="savol">n-savol</h3>
+                    
+                    <hr>
+                    <p id="option"></p>
+                </div>
+                
+            </div>
+
+            <footer class="fixed-bottom pb-5 mb-3 text-center">
+                <div>
+                    <div id="info"></div>
+
+                    <a class="btn btn-lg btn-warning" href="index.html">home</a>
+    
+                    <button class="btn btn-lg btn-primary" 
+                        id="next">next</button>
+                </div>
+            </footer>
+        </main>
+
+        <script src="lib/jquery-3.3.1.slim.min.js"></script>
+        <script src="lib/popper.min.js"></script>
+        <script src="lib/bootstrap.min.js"></script>
+        
+        <script src="database.js"></script>
+
+        <script>
+            // varantlar random chiqadi
+            function shuffleElements($e) {
+                var i, index1, index2, temp_val;
+
+                var count = $e.length
+                var $p = $e.parent()
+                var shuff = []
+
+
+                // populate array of indexes
+                for (i = 0; i < count; i++) 
+                    shuff.push(i)
+
+                // shuffle indexes
+                for (i = 0; i < count; i++) {
+                    index1 = (Math.random() * count) | 0;
+                    index2 = (Math.random() * count) | 0;
+
+                    // swap
+                    temp_val = shuff[index1];
+                    shuff[index1] = shuff[index2];
+                    shuff[index2] = temp_val;
+                }
+
+                // apply random order to elements
+                $e.detach();
+                for (i = 0; i < count; i++) 
+                    $p.append( $e.eq(shuff[i]) );
+            }
+        </script>
+
+        <script>
+            // load state
+            const state = localStorage.getItem("state") || "uzb"
+
+            // counters
+            let count = 0
+            let solve = 0
+            let wrong = 0
+
+            let isnext = true // o'tdimi
+            let disc_tog = false // yordamdan foydalandimi
+            let desc_type = false // yordamni turi
+
+            // buffers automatically when created
+            const snd = new Audio("pong.mp3")
+
+            // view option block
+            $("#option").append(
+                [0,1,2,3].map(val=>`
+                    <button id="variant-${val}"
+                        class="variant 
+                            btn btn-block btn-lg
+                            border"
+                        >${val}-qiymat</button>
+                `)
+            )
+
+            $("#state_info").text(state)
+
+            // load units
+            function load_unit_list(){
+                const val = localStorage.getItem("units")
+
+                if(!val){
+                    alert("config bo'limiga o'ting unit belgilang")
+                    return []
+                }
+
+                return [
+                    JSON.parse(val).map(
+                        // filtirlash
+                        y=>lst.filter(
+                            x=>x.book==y[0] && x.unit==y[1]
+                        )
+                    ).reduce(
+                        // massivlarni qo'shib olish
+                        (acc, val)=> acc.concat(val) 
+                    )
+                ][0]
+            }
+
+            const sub_lst = load_unit_list().sort(
+                (a,b)=>Math.random() - .5
+            )
+
+            // TODO: random qo'shish
+            function gen(){
+                const val = sub_lst[count]
+
+                const state2 = state!="mix"?state:(Math.random()>.5?"eng":"uzb")
+
+                // question
+                $('#savol').text(state2=="uzb"?val.uzb:val.eng)
+
+                // console.log(val)
+                // view
+                let opt = sub_lst.sort(
+                    (a,b) => Math.random() - 0.5
+                ).slice(0,4)
+
+                if(!opt.includes(val)){
+                    opt.pop()
+                    opt.push(val)
+                }
+
+                for(let i of [0,1,2,3]){
+                    const v = opt[i]
+
+                    $('#variant-'+i)
+                        .text(state2=="uzb" ? v.eng : v.uzb)
+                        .attr('reply', state2=="uzb" ? v.eng===val.eng : v.uzb===val.uzb )
+                        .removeAttr('disabled')
+                }
+
+                // randomize
+                shuffleElements($('.variant'))
+            }
+
+            // javobni chiqaradi
+            $('.variant').click(function() {
+                // barcha tugmalar tuhtatilsin
+                $('.variant')
+                    .attr('disabled', true)
+
+                // tug'ri javob doim ko'rsatsin
+                $('.variant[reply=true]')
+                    .toggleClass('btn-success', true)
+                
+                // asdf
+                if($(this).attr('reply')==='true')
+                    solve++
+                else{
+                    wrong++
+                    
+                    $(this).toggleClass('btn-danger',  true)
+                    
+                    snd.play()
+                }
+                
+                info_view()
+            })
+
+            gen()
+
+            // info
+            function info_view(){
+                $("#info").text(`${count+1}/${
+                    sub_lst.length} | -${wrong}/+${solve}/${
+                    (100-100*wrong/sub_lst.length).toFixed(2)}%`)
+            }
+
+            // radiobutton init
+            function variant_init(){
+                $('.variant')
+                    .removeAttr('disabled')
+                    .toggleClass('btn-success', false)
+                    .toggleClass('btn-danger',  false)
+            }
+
+            $("#next").click(function(){
+                if(count+1==sub_lst.length) 
+                    return;
+
+                count++
+
+                variant_init()
+                
+                info_view()
+
+                gen()
+            })
+
+            info_view()
+        </script>
+
+        <script src="theme.js"></script>
+    </body>
+</html>
